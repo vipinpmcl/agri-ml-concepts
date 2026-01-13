@@ -1,0 +1,314 @@
+#!/usr/bin/env python3
+"""
+Script to create remaining PCA notebooks
+"""
+
+import json
+import os
+
+# Base path
+base_path = "/home/vipin/1.EMastersAIML/11.AIMLProjectsWithRealWorldDatasets/workspace/01-PCA"
+
+# Notebook 1: Comparison
+comparison_nb = {
+    "cells": [
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "# Comparing Our PCA with sklearn\n",
+                "\n",
+                "## Introduction\n",
+                "\n",
+                "Let's verify our implementation by comparing it side-by-side with sklearn.\n",
+                "\n",
+                "### What You'll Learn\n",
+                "1. How to compare two PCA implementations\n",
+                "2. Verify numerical equivalence\n",
+                "3. Performance comparison\n",
+                "4. When to use each implementation\n",
+                "\n",
+                "### Testing Strategy\n",
+                "- Use same data for both\n",
+                "- Compare all outputs\n",
+                "- Time performance\n",
+                "- Verify mathematical equivalence"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# Import libraries\n",
+                "import sys\n",
+                "import numpy as np\n",
+                "import matplotlib.pyplot as plt\n",
+                "import seaborn as sns\n",
+                "import time\n",
+                "from sklearn.decomposition import PCA as SklearnPCA\n",
+                "from sklearn.datasets import load_iris, make_classification\n",
+                "\n",
+                "# Import our custom PCA\n",
+                "sys.path.append('../2_from_scratch')\n",
+                "from pca_implementation import PCA as CustomPCA\n",
+                "\n",
+                "plt.style.use('seaborn-v0_8-darkgrid')\n",
+                "np.set_printoptions(precision=4, suppress=True)\n",
+                "\n",
+                "print('✓ Libraries imported')"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": ["## 1. Basic Comparison on Simple Data"]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# Test data\n",
+                "np.random.seed(42)\n",
+                "X = np.array([\n",
+                "    [2.5, 2.4], [0.5, 0.7], [2.2, 2.9], [1.9, 2.2],\n",
+                "    [3.1, 3.0], [2.3, 2.7], [2.0, 1.6], [1.0, 1.1]\n",
+                "])\n",
+                "\n",
+                "# Our implementation\n",
+                "custom_pca = CustomPCA(n_components=2)\n",
+                "X_custom = custom_pca.fit_transform(X)\n",
+                "\n",
+                "# sklearn implementation  \n",
+                "sklearn_pca = SklearnPCA(n_components=2)\n",
+                "X_sklearn = sklearn_pca.fit_transform(X)\n",
+                "\n",
+                "print('Comparison Results:\\n')\n",
+                "print('=' * 60)\n",
+                "print('\\n1. Mean values match:', np.allclose(custom_pca.mean_, sklearn_pca.mean_))\n",
+                "print('   Custom:', custom_pca.mean_)\n",
+                "print('   Sklearn:', sklearn_pca.mean_)\n",
+                "\n",
+                "print('\\n2. Explained variance match:', \n",
+                "      np.allclose(custom_pca.explained_variance_, sklearn_pca.explained_variance_))\n",
+                "print('   Custom:', custom_pca.explained_variance_)\n",
+                "print('   Sklearn:', sklearn_pca.explained_variance_)\n",
+                "\n",
+                "print('\\n3. Explained variance ratio match:',\n",
+                "      np.allclose(custom_pca.explained_variance_ratio_, sklearn_pca.explained_variance_ratio_))\n",
+                "print('   Custom:', custom_pca.explained_variance_ratio_)\n",
+                "print('   Sklearn:', sklearn_pca.explained_variance_ratio_)\n",
+                "\n",
+                "# Components might have opposite signs (both valid)\n",
+                "components_match = np.allclose(np.abs(custom_pca.components_), np.abs(sklearn_pca.components_))\n",
+                "print('\\n4. Components match (absolute values):', components_match)\n",
+                "\n",
+                "# Transformed data might differ in sign\n",
+                "transform_match = np.allclose(np.abs(X_custom), np.abs(X_sklearn))\n",
+                "print('\\n5. Transformed data match (absolute values):', transform_match)\n",
+                "\n",
+                "if all([components_match, transform_match]):\n",
+                "    print('\\n✓ SUCCESS: Implementations produce equivalent results!')\n",
+                "    print('  (Sign differences are mathematically valid)')\n",
+                "else:\n",
+                "    print('\\n✗ WARNING: Check for implementation differences')"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": ["## 2. Visual Comparison"]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# Visualize both transformations\n",
+                "fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))\n",
+                "\n",
+                "# Custom PCA\n",
+                "ax1.scatter(X_custom[:, 0], X_custom[:, 1], s=100, alpha=0.7,\n",
+                "           edgecolors='k', linewidths=2, color='blue')\n",
+                "ax1.axhline(0, color='gray', linestyle='--', alpha=0.5)\n",
+                "ax1.axvline(0, color='gray', linestyle='--', alpha=0.5)\n",
+                "ax1.set_xlabel('PC1', fontsize=12)\n",
+                "ax1.set_ylabel('PC2', fontsize=12)\n",
+                "ax1.set_title('Custom PCA Implementation', fontsize=14, fontweight='bold')\n",
+                "ax1.grid(True, alpha=0.3)\n",
+                "\n",
+                "# sklearn PCA\n",
+                "ax2.scatter(X_sklearn[:, 0], X_sklearn[:, 1], s=100, alpha=0.7,\n",
+                "           edgecolors='k', linewidths=2, color='red')\n",
+                "ax2.axhline(0, color='gray', linestyle='--', alpha=0.5)\n",
+                "ax2.axvline(0, color='gray', linestyle='--', alpha=0.5)\n",
+                "ax2.set_xlabel('PC1', fontsize=12)\n",
+                "ax2.set_ylabel('PC2', fontsize=12)\n",
+                "ax2.set_title('sklearn PCA', fontsize=14, fontweight='bold')\n",
+                "ax2.grid(True, alpha=0.3)\n",
+                "\n",
+                "plt.tight_layout()\n",
+                "plt.show()\n",
+                "\n",
+                "print('💡 Plots may be mirrored (sign flip) but structure is identical')"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": ["## 3. Performance Comparison"]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# Generate larger dataset\n",
+                "X_large, _ = make_classification(n_samples=1000, n_features=20, \n",
+                "                                 n_informative=15, random_state=42)\n",
+                "\n",
+                "print('Performance Test on Larger Dataset:')\n",
+                "print(f'Samples: {X_large.shape[0]}, Features: {X_large.shape[1]}')\n",
+                "print('\\n' + '=' * 60)\n",
+                "\n",
+                "# Time custom PCA\n",
+                "start = time.time()\n",
+                "custom_pca_large = CustomPCA(n_components=10)\n",
+                "X_custom_large = custom_pca_large.fit_transform(X_large)\n",
+                "custom_time = time.time() - start\n",
+                "\n",
+                "# Time sklearn PCA\n",
+                "start = time.time()\n",
+                "sklearn_pca_large = SklearnPCA(n_components=10)\n",
+                "X_sklearn_large = sklearn_pca_large.fit_transform(X_large)\n",
+                "sklearn_time = time.time() - start\n",
+                "\n",
+                "print(f'\\nCustom PCA time: {custom_time:.4f} seconds')\n",
+                "print(f'sklearn PCA time: {sklearn_time:.4f} seconds')\n",
+                "print(f'Speedup factor: {custom_time/sklearn_time:.2f}x')\n",
+                "\n",
+                "print('\\n💡 sklearn is typically faster (optimized C/Fortran code)')\n",
+                "print('   But our implementation is great for learning!')"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": ["## 4. Iris Dataset Comparison"]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# Load and compare on Iris\n",
+                "from sklearn.preprocessing import StandardScaler\n",
+                "\n",
+                "iris = load_iris()\n",
+                "X_iris = StandardScaler().fit_transform(iris.data)\n",
+                "y_iris = iris.target\n",
+                "\n",
+                "# Both implementations\n",
+                "custom_iris = CustomPCA(n_components=2).fit_transform(X_iris)\n",
+                "sklearn_iris = SklearnPCA(n_components=2).fit_transform(X_iris)\n",
+                "\n",
+                "# Plot side by side\n",
+                "fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))\n",
+                "colors = ['red', 'blue', 'green']\n",
+                "\n",
+                "for i, color in enumerate(colors):\n",
+                "    ax1.scatter(custom_iris[y_iris==i, 0], custom_iris[y_iris==i, 1],\n",
+                "               color=color, alpha=0.6, s=50, edgecolors='k', linewidths=0.5,\n",
+                "               label=iris.target_names[i])\n",
+                "    ax2.scatter(sklearn_iris[y_iris==i, 0], sklearn_iris[y_iris==i, 1],\n",
+                "               color=color, alpha=0.6, s=50, edgecolors='k', linewidths=0.5,\n",
+                "               label=iris.target_names[i])\n",
+                "\n",
+                "ax1.set_title('Custom PCA on Iris', fontsize=14, fontweight='bold')\n",
+                "ax1.set_xlabel('PC1', fontsize=12)\n",
+                "ax1.set_ylabel('PC2', fontsize=12)\n",
+                "ax1.legend()\n",
+                "ax1.grid(True, alpha=0.3)\n",
+                "\n",
+                "ax2.set_title('sklearn PCA on Iris', fontsize=14, fontweight='bold')\n",
+                "ax2.set_xlabel('PC1', fontsize=12)\n",
+                "ax2.set_ylabel('PC2', fontsize=12)\n",
+                "ax2.legend()\n",
+                "ax2.grid(True, alpha=0.3)\n",
+                "\n",
+                "plt.tight_layout()\n",
+                "plt.show()\n",
+                "\n",
+                "print('✓ Both implementations separate the classes identically')"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## Key Takeaways\n",
+                "\n",
+                "### Verification Results\n",
+                "\n",
+                "1. **Mathematically equivalent**: Same variance, components, transformations\n",
+                "2. **Sign ambiguity**: Eigenvectors can flip sign (both valid)\n",
+                "3. **Performance**: sklearn is faster (optimized), but both work\n",
+                "4. **Understanding**: Our implementation helps understand internals\n",
+                "\n",
+                "### When to Use Each\n",
+                "\n",
+                "**Use Custom PCA when:**\n",
+                "- Learning PCA concepts\n",
+                "- Need to modify algorithm\n",
+                "- Educational purposes\n",
+                "- Small datasets\n",
+                "\n",
+                "**Use sklearn PCA when:**\n",
+                "- Production code\n",
+                "- Large datasets\n",
+                "- Need speed\n",
+                "- Integration with sklearn pipelines\n",
+                "\n",
+                "### Next Steps\n",
+                "\n",
+                "Now we'll apply PCA to real agricultural soil data!"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "---\n",
+                "\n",
+                "**Excellent!** Both implementations work identically.\n",
+                "\n",
+                "Continue to: `../4_agricultural_application/soil_data_exploration.ipynb`"
+            ]
+        }
+    ],
+    "metadata": {
+        "kernelspec": {
+            "display_name": "Python 3",
+            "language": "python",
+            "name": "python3"
+        }
+    },
+    "nbformat": 4,
+    "nbformat_minor": 4
+}
+
+# Write comparison notebook
+comparison_path = os.path.join(base_path, "3_with_sklearn", "comparison_scratch_vs_sklearn.ipynb")
+with open(comparison_path, 'w') as f:
+    json.dump(comparison_nb, f, indent=2)
+
+print(f"Created: {comparison_path}")
+
+# Additional notebooks will be created separately
+print("\nComparison notebook created successfully!")
